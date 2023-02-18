@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import Any, Optional
 
-from teddecor import TED
+from saimll import SAIML
 
 
 class Missing:
@@ -72,7 +72,7 @@ class TypesDefault:
             and not isinstance(default, self.types)
         ):
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*Default value must one of the valid types \
 \\[{', '.join(f'[@F #f5a97f]{val.__name__}[@]' for val in self.types)}\\]"
                 )

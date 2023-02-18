@@ -23,12 +23,12 @@ def _process_config(
     if _type == "yaml":
         from yaml import safe_load as yaml_load, safe_dump as yaml_dump
 
-        class TEDyaml(ConfigBase, cls):
+        class TCFGyaml(ConfigBase, cls):
             def __init__(self, cfg=None):
                 super().__init__(cls, cfg, save, load, save_defaults)
 
             def __call__(self, cfg=None):
-                return TEDyaml(cfg)
+                return TCFGyaml(cfg)
             
             @staticmethod
             def __load__(file: str | Path | TextIOWrapper):
@@ -50,7 +50,7 @@ def _process_config(
                 else:
                     yaml_dump(data, file, default_flow_style=False)
 
-        return TEDyaml
+        return TCFGyaml
     elif _type == "toml":
         try:
             from tomllib import load as toml_load, dump as toml_dump
@@ -63,12 +63,12 @@ def _process_config(
 toml library."
                 )
 
-        class TEDtoml(ConfigBase):
+        class TCFGtoml(ConfigBase):
             def __init__(self, cfg=None):
                 super().__init__(cls, cfg, save, load, save_defaults)
 
             def __call__(self, cfg=None):
-                return TEDyaml(cfg)
+                return TCFGyaml(cfg)
 
             @staticmethod
             def __load__(file: str | Path | TextIOWrapper):
@@ -84,9 +84,9 @@ toml library."
                 else:
                     toml_dump(data, file)
                 
-        return TEDtoml
+        return TCFGtoml
     else:
-        class TEDConfig(ConfigBase, cls):  # pylint: disable=missing-class-docstring
+        class TCFGConfig(ConfigBase, cls):  # pylint: disable=missing-class-docstring
             # Base config class. Built from the attributes of another class.
             #   Similar to dataclass, but with typing and default values.
 
@@ -94,9 +94,9 @@ toml library."
                 super().__init__(cls, cfg, save, load, save_defaults)
 
             def __call__(self, cfg=None):
-                return TEDyaml(cfg)
+                return TCFGyaml(cfg)
 
-        return TEDConfig
+        return TCFGConfig
 
 
 class config:

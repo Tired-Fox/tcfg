@@ -1,4 +1,4 @@
-"""teddecor.decorators.config
+"""tcfg.decorators.config
 
 Allows  user to define classes representing configuration sections. It can automatically load
 from a provided load path, and save to a provided save path. Allows for strict typing of

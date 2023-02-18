@@ -6,7 +6,7 @@ from json import JSONEncoder, dump as json_dump, load as json_load
 from pathlib import Path
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
-from teddecor import TED, p_value
+from saimll import SAIML, p_value
 
 from .types_default import TypesDefault, Options
 
@@ -22,7 +22,7 @@ def _save_to_open_file(file: TextIOWrapper, data: dict):
 
 def _path(path: list[str]) -> str:
     """Generate the formatted path to the given variable."""
-    return ".".join(f"[@F #eed49f]{TED.escape(val)}[@F]" for val in path)
+    return ".".join(f"[@F #eed49f]{SAIML.escape(val)}[@F]" for val in path)
 
 
 def _type(val: Any) -> type:
@@ -410,7 +410,7 @@ save method arguments"
     def __vk_in_object__(self, key, parent, context):
         if key not in context:
             raise ValueError(
-                TED.parse(
+                SAIML.parse(
                     f"Invalid variable [@F #eed49f]{key}[@F] in \
 {_path([*parent, self.__classname__])}"
                 )
@@ -420,7 +420,7 @@ save method arguments"
         attr = context[key]
         if not isinstance(value, attr.types):
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*{_path([*parent, self.__classname__, key])} must be \
 on of these type(s): {', '.join(f'[@F #f5a97f]{val.__name__}[@]' for val in attr.types)}; \
 was [@F 210]{_type(value).__name__}"
@@ -429,7 +429,7 @@ was [@F 210]{_type(value).__name__}"
 
         if value not in attr.options:
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*{_path([*parent, self.__classname__, key])} must be one of the \
 following values: \
 ({', '.join(p_value(val, decode=False) for val in attr.options)}); \
@@ -442,7 +442,7 @@ was {p_value(value, decode=False)}"
         attr = context[key]
         if not isinstance(value, list):
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*{_path([*parent, self.__classname__, key])} must be a {_type(attr).__name__}\
  containing any of these types: \
 {', '.join(f'[@F #f5a97f]{val.__name__}[@]' for val in _all_types(attr))}\
@@ -458,7 +458,7 @@ was {p_value(value, decode=False)}"
 {', '.join([f'[@F 210]{type(i).__name__}[@]' for i in invalids])}"
 
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*{_path([*parent, self.__classname__, key])} must be a {_type(attr).__name__}\
  containing any of these type(s): \
 {', '.join(f'[@F #f5a97f]{val.__name__}[@]' for val in _all_types(attr))}{message}"
@@ -470,7 +470,7 @@ was {p_value(value, decode=False)}"
         # Value must be a dict / same type as context[key]
         if not isinstance(value, _type(attr)):
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*{_path([*parent, self.__classname__, key])} must be a \
 {_type(attr).__name__}; was [@F 210]{_type(attr).__name__}"
                 )
@@ -480,7 +480,7 @@ was {p_value(value, decode=False)}"
         for ikey, ivalue in [(k, v) for k, v in value.items() if k in attr]:
             if not isinstance(ivalue, _type(attr.get(ikey))):
                 raise TypeError(
-                    TED.parse(
+                    SAIML.parse(
                         f"""*{
                             _path([*parent, self.__classname__, key, ikey])
 } must be a {_type(attr.get(ikey)).__name__}; \
@@ -508,7 +508,7 @@ was [@F 210]{_type(value).__name__}"""
             and not isinstance(value, attr)
         ):
             raise TypeError(
-                TED.parse(
+                SAIML.parse(
                     f"*{_path([*parent, self.__classname__, key])} must be of type \
 [@F #f5a97f]{attr.__name__}[@]; was [@F 210]{type(value).__name__}"
                 )
@@ -519,7 +519,7 @@ was [@F 210]{_type(value).__name__}"""
         if isinstance(attr, TypesDefault):
             if type(value) not in attr.types:
                 raise TypeError(
-                    TED.parse(
+                    SAIML.parse(
                         f"*{_path([*parent, self.__classname__, key])} must be one \
 of these types ({', '.join(f'[@F #f5a97f]{_type(val).__name__}[@]' for val in attr.types)}); was \
 [@F 210]{type(value).__name__}"
@@ -534,7 +534,7 @@ of these types ({', '.join(f'[@F #f5a97f]{_type(val).__name__}[@]' for val in at
                 and any(type(val) not in attr.nested_types for val in value)
             ):
                 raise ValueError(
-                    TED.parse(
+                    SAIML.parse(
                         f"*Values in {_path([*parent, self.__classname__, key])} must be one \
 of these types ({', '.join(f'[@F #f5a97f]{val.__name__}[@]' for val in attr.nested_types)})\
 ; was [@F 210]{type(value).__name__}"
@@ -544,7 +544,7 @@ of these types ({', '.join(f'[@F #f5a97f]{val.__name__}[@]' for val in attr.nest
                 self.__tedconfig_validated__.append(key)
 
     def pretty(self, depth: int = -1) -> str:
-        """Encode with teddecor.pprint and return the formatted string.
+        """Encode with saimll.pprint and return the formatted string.
 
         Args:
             depth (int): Depth of what to print. -1 means no limit otherwise dict, list, tuple

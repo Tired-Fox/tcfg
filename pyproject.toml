@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tcfg"
-version = "0.1.0"
+version = "0.3.0"
 authors = [
     { name="Tired Fox", email="zboehm104@gmail.com"}
 ]
@@ -18,15 +18,15 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    # "simll==0.1.0"
+    "saimll==0.3.0"
 ]
 
 [project.scripts]
 # moph = "mophidian.__main__:cli"
 
 [project.urls]
-"Homepage" = ""
-"Documentation" = ""
+"Homepage" = "https://github.com/Tired-Fox/tcfg"
+"Documentation" = "https://tired-fox.github.io/tcfg"
 
 [tool.black]
 line-length = 100
