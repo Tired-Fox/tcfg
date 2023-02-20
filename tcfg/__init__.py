@@ -1,39 +1,25 @@
-"""tcfg.decorators.config
+from .cfg import cfg
+from .reserved import *
 
-Allows  user to define classes representing configuration sections. It can automatically load
-from a provided load path, and save to a provided save path. Allows for strict typing of
-configuration values and for default values. Currently JSON, TOML, and YAML are supported.
+def tcfg(
+    cls=None,
+    *,
+    path: str = None,
+) -> cfg:
+    """Decorator to convert a class to a configuration class object."""
 
-With the configurations being setup in classes you may use dot notation to access the variables.
+    def wrapper(wrap=object) -> cfg:
+        if path is not None:
+            class Config(cfg, wrap):
+                """Config class from the config base class and the wrapped class."""
+                _path_ = path
+            return Config
+        else:
+            class Config(cfg, wrap):
+                """Config class from the config base class and the wrapped class."""
+            return Config
 
-Example:
-    If you have a json file that looks like this
+    if cls is None:
+        return wrapper
 
-    ```json
-    {
-        "extensions": ["sample", "example"],
-        "validate": true
-    }
-    ```
-
-    and setup the configuration class like this
-
-    ```python
-    @config.json(load="file_path.json")
-    class Config:
-        extensions = [str]
-        validate = False
-
-    cfg = Config.init()
-    ```
-
-    you can access the validate variable with
-
-    ```python
-    cfg.validate
-    ```
-"""
-
-from .config import config as cfg
-from .config_base import ConfigBase
-from .types_default import TypesDefault, Options
+    return wrapper(cls)
