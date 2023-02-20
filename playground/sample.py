@@ -7,8 +7,11 @@ class Markdown:
 @cfg.json(load="cfg.json")
 class Config:
     """Test Configuration"""
-    data = ""
+    data: str = ""
 
-    markdown = Markdown
+    markdown: Markdown = Markdown
 
 print(Config().as_dict())
+
+config = Config()
+config.markdown
