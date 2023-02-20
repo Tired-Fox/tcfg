@@ -81,8 +81,14 @@ class cfg:
     __tcfg_values__: dict = {}
     """The found and compiled class attributes for the configuration."""
 
-    def __init__(self) -> None:
+    def __init__(self, data: dict = MISSING) -> None:
         cfg.__tcfg_setup__(self)
+        if self._path_ != MISSING:
+            # open and parse the config file
+            pass
+        else:
+            if data == MISSING:
+                raise Exception("Must provide a path to a config file or a dict to parse")
 
     def __tcfg_setup__(self):
         __tcfg_values__ = {}
