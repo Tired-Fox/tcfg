@@ -1,4 +1,6 @@
-from tcfg import Path, Options, config
+from tcfg import Path, config
+from typing import Literal
+
 
 class Nested(config):
     """Nested config"""
@@ -7,6 +9,7 @@ class Nested(config):
 
     port: int = 8081
     """Port number of the server."""
+
 
 class Config(config):
     """Main config"""
@@ -22,9 +25,10 @@ class Config(config):
     extensions: list[str | dict[str, dict]]
     """List of extensions to use for the server."""
 
-    path: str = Options("/home/", "/home/documents/")
+    path: Literal['/home/', '/home/documents']
 
     random: Path
+
 
 if __name__ == "__main__":
     config = Config()

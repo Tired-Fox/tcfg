@@ -1,8 +1,11 @@
-from tcfg import tcfg, Options, Path
+from tcfg import Path, tcfg
+from typing import Literal
+
 
 @tcfg
 class SuperNested:
     extra: str
+
 
 @tcfg(path="nested.json")
 class Nested:
@@ -12,6 +15,7 @@ class Nested:
     """Port number of the server."""
 
     sup_nest: SuperNested
+
 
 @tcfg(path="cfg.yml")
 class Config:
@@ -28,11 +32,13 @@ class Config:
     extensions: list[str | dict[str, dict]]
     """List of extensions to use for the server."""
 
-    path = Options("/home/", "/home/documents/")
+    path: Literal[Path('/home/'), Path('/home/documents')]
     """Path to root of server. ONLY two paths supported."""
 
     random: Path
-    """Random path. Is normalized and has `/` stripped from ends. Stored as a string."""
+    """Random path. Is normalized and has `/` stripped from ends. Stored as a
+    string."""
+
 
 print(dict(Config()))
 config = Config()
