@@ -31,7 +31,7 @@ class Path:
         """
 
         if strip:
-            return "/" + "/".join(
+            return "/".join(
                 path.replace("\\", "/").strip("/")
                 for path in paths
             )
