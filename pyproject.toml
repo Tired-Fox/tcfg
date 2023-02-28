@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tcfg"
-version = "0.3.0"
+version = "0.4.2"
 authors = [
     { name="Tired Fox", email="zboehm104@gmail.com"}
 ]
@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "saimll==0.3.0",
+    "saimll",
     "pyyaml>=6",
     "toml>=0.10.2"
 ]

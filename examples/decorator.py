@@ -32,10 +32,10 @@ class Config:
     extensions: list[str | dict[str, dict]]
     """List of extensions to use for the server."""
 
-    path: Literal[Path('/home/'), Path('/home/documents')]
+    path: Literal['/home/', '/home/documents']
     """Path to root of server. ONLY two paths supported."""
 
-    random: Path
+    random: str = Path('/random/dir')
     """Random path. Is normalized and has `/` stripped from ends. Stored as a
     string."""
 

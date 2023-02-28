@@ -93,8 +93,6 @@ def setup_default(default: Any):
     """
     if isinstance(default, (dict, list, tuple, set)):
         return type(default)(default)
-    elif isinstance(default, Path):
-        return str(default)
     return default
 
 
@@ -425,7 +423,7 @@ class CFGLiteral:
         return f'{self}'
 
     def __str__(self) -> str:
-        options = [f'"{option}"' for option in self.literal]
+        options = [f'"{option}"' for option in self.literals]
         return f'Literal[{", ".join(options)}]'
 
 
@@ -512,14 +510,14 @@ class cfg:
 
         if self._path_ != MISSING:
             # open and parse the config file
-            file_path = pathlib.Path(self._path_)
+            file_path = pathlib.Path(self._path_.strip("/"))
             if not file_path.is_file():
                 data = data or {}
             else:
                 extension = file_path.suffix.lstrip(".")
                 with open(file_path, "r", encoding="utf-8") as cfg_file:
                     if not hasattr(self, f"load_{extension}"):
-                        raise Exception(
+                        raise LookupError(
                             f"Load callback for config extensions of \
 '.{extension}' not found; must have load_{extension} defined to load \
 '.{extension}' files")
@@ -527,8 +525,8 @@ class cfg:
                     if not ismethod(getattr(self, f"load_{extension}")):
                         raise TypeError(f"load_{extension} must be a method")
 
-                    data = getattr(self, f"load_{extension}")(
-                        cfg_file.read()) or {}
+                    text = cfg_file.read()
+                    data = getattr(self, f"load_{extension}")(text) or {}
         else:
             data = data or {}
 
@@ -573,6 +571,10 @@ class cfg:
                     or cfg not in data["type"].type.__bases__
                 ):
                     data["default"] = data["type"].default()
+
+            if isinstance(data["default"], Path):
+                data["type"] = parse_type(Path, [*parents, attr])
+                data["default"] = str(data["default"])
 
             setattr(self, attr, data["default"])
 
@@ -668,9 +670,9 @@ class cfg:
         extension = file_path.suffix.lstrip(".")
         with open(file_path, "+w", encoding="utf-8") as cfg_file:
             if not hasattr(self, f"save_{extension}"):
-                raise Exception(
+                raise LookupError(
                     f"Save callback for config extensions of '.{extension}' \
-not found; must have save_{extension} defined to load '.{extension}' files")
+not found; must have save_{extension} defined to save '.{extension}' files")
 
             if not ismethod(getattr(self, f"save_{extension}")):
                 raise TypeError(f"save_{extension} must be a method")

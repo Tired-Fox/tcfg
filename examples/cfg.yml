@@ -1,3 +1,2 @@
-random: home/path\here
-unique: string now
-path: '/home\'
+random: '\some/random\sub/dir'
+path: /invalid/

@@ -27,10 +27,10 @@ class Config(config):
 
     path: Literal['/home/', '/home/documents']
 
-    random: Path
+    random: str = Path('/random/dir')
 
 
 if __name__ == "__main__":
-    config = Config()
-    print(config.as_dict())
-    print(config.nested.port)
+    cfg = Config()
+    print(cfg.as_dict())
+    print(cfg.nested.port)

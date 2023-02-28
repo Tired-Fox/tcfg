@@ -1,6 +1,8 @@
-from pyparsing import Any
 from .config import cfg
 from .reserved import *
+from typing import Literal
+
+__version__ = "0.4.1"
 
 def tcfg(
     cls=None,
