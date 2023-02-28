@@ -1,6 +1,6 @@
-from tcfg import cfg, Path, Options
+from tcfg import Path, Options, config
 
-class Nested(cfg):
+class Nested(config):
     """Nested config"""
 
     _path_ = "nested.json"
@@ -8,7 +8,7 @@ class Nested(cfg):
     port: int = 8081
     """Port number of the server."""
 
-class Config(cfg):
+class Config(config):
     """Main config"""
 
     _path_ = "cfg.yml"

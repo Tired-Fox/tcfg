@@ -29,9 +29,10 @@ from pyparsing import Iterator
 from toml import loads as toml_load, dumps as toml_dump
 from yaml import safe_load as yml_load, dump as yml_dump
 
-from .reserved import *
+from .reserved import Options, Path, MISSING
 
 from saimll import ppath, SAIML
+
 
 def ptype(_type: str, quotes: bool = True) -> str:
     markup = SAIML.parse(f"[@F #f5a97f $]{_type}[@F]")
@@ -40,25 +41,29 @@ def ptype(_type: str, quotes: bool = True) -> str:
         return f"'{markup}'"
     return markup
 
+
 def new_type(
-    _type: UnionType|type|GenericAlias,
+    _type: UnionType | type | GenericAlias,
     parents: list[str]
-) -> CFGGenericAlias|CFGUnionType|CFGType:
+) -> CFGGenericAlias | CFGUnionType | CFGType:
     """Generate a config validation type from a new_type."""
 
-    if isinstance(_type, (type, Options)):
-        return CFGType(_type, parents)
     if isinstance(_type, UnionType):
         return CFGUnionType(_type, parents)
     if isinstance(_type, GenericAlias):
         return CFGGenericAlias.new(_type, parents)
+    if isinstance(_type, (type, Options)):
+        return CFGType(_type, parents)
+
     raise Exception(f"{ppath(*parents, spr='.')}; Unkown type hint {_type}")
+
 
 def get_type(value: Any) -> type:
     """Get the type of the value. If it is already a type then the value is returned."""
     if isinstance(value, type):
         return value
     return type(value)
+
 
 def parse_type(_type: type | Any, parents: list[str]) -> type:
     """Parse and return a TCFG type that can be validated."""
@@ -69,19 +74,24 @@ def parse_type(_type: type | Any, parents: list[str]) -> type:
 
     return new_type(get_type(_type), [*parents, "type_hint"])
 
+
 def setup_default(default: Any):
     """Create copies of dict, list, tuple, and set. Return passed value otherwise."""
     if isinstance(default, (dict, list, tuple, set)):
         return type(default)(default)
+    elif isinstance(default, Path):
+        return str(default)
     return default
 
-def parse_valid_value(_type: CFGType|CFGUnionType|CFGGenericAlias|type, value: Any):
+
+def parse_valid_value(_type: CFGType | CFGUnionType | CFGGenericAlias | type, value: Any):
     """Parse the config value, if it is one of the special config types then return the transformed
     value.
     """
     if isinstance(_type, CFGType) and _type.type == Path or _type == Path:
         return Path.normalize(value)
     return value
+
 
 def parse_options(options: dict, parents: list[str]) -> dict:
     """Parse the option type or value on a config object and determine the options and default
@@ -102,7 +112,8 @@ def parse_options(options: dict, parents: list[str]) -> dict:
                 path = ""
             else:
                 path = ".".join(parents) + "; "
-            raise ValueError(f"{path}Options configuration key must have a value")
+            raise ValueError(
+                f"{path}Options configuration key must have a value")
         _default = Options(options["default"])
         return {"type": new_type(_default, parents), "default": _default.default}
 
@@ -111,8 +122,10 @@ def parse_options(options: dict, parents: list[str]) -> dict:
 
     return options
 
+
 def is_reserved(_type):
     return isinstance(_type, Options) or _type in [Path]
+
 
 def validate_reserved(value, _type, parents):
     if isinstance(_type, Options):
@@ -123,7 +136,9 @@ def validate_reserved(value, _type, parents):
 expected {ptype('str')}"
         )
 
+
 valid_type = (int, float, bool, str, list, dict, Path, Options)
+
 
 class CFGGenericAlias:
     """Base type that can validate a value."""
@@ -141,7 +156,8 @@ class CFGGenericAlias:
         if name is not None:
             name = name.group("name")
         else:
-            raise TypeError(f"{ppath(*parents, spr='.')}; Unkown GenericAlias name for {_type!r}")
+            raise TypeError(
+                f"{ppath(*parents, spr='.')}; Unkown GenericAlias name for {_type!r}")
 
         if name == "set":
             return CFGGenericAlias.CFGSetType(_type.__args__, parents)
@@ -152,14 +168,15 @@ class CFGGenericAlias:
         if name == "dict":
             return CFGGenericAlias.CFGDictType(_type.__args__, parents)
 
-        raise TypeError(f"{ppath(*parents, spr='.')}; Unkown GenericAlias name for {_type!r}")
+        raise TypeError(
+            f"{ppath(*parents, spr='.')}; Unkown GenericAlias name for {_type!r}")
 
     class CFGDictType:
         """Dict type that can validate a value."""
 
         def __init__(
             self,
-            types: set(type|GenericAlias|UnionType),
+            types: set(type | GenericAlias | UnionType),
             parents: list[str]
         ) -> None:
             self.name = "dict"
@@ -182,7 +199,8 @@ for the key and one for the value."
 {new_type(value_types[1], [*parents, 'dict_value'])}]>"
                 )
 
-            self.value_type = new_type(value_types[1], [*parents, "dict_value"])
+            self.value_type = new_type(
+                value_types[1], [*parents, "dict_value"])
 
         def default(self) -> dict:
             """Default value of the configuration type."""
@@ -204,7 +222,7 @@ expected {ptype('dict')}"
                         f"{ppath(*parents, spr='.')}; invalid dict value type \
 {ptype(type(item).__name__)}, expected {self.value_type!r}"
                     ) from exc
-                    
+
             return dict(value)
 
         def __repr__(self) -> str:
@@ -218,16 +236,16 @@ expected {ptype('dict')}"
 
         def __init__(
             self,
-            item_types: set[type|UnionType|GenericAlias],
+            item_types: set[type | UnionType | GenericAlias],
             parents: list[str]
         ) -> None:
             self.name = "tuple"
-            self.item_types = [new_type(it, [*parents, "tuple"]) for it in list(item_types)]
+            self.item_types = [new_type(it, [*parents, "tuple"])
+                               for it in list(item_types)]
 
         def default(self) -> tuple:
             """Default value of the configuration type."""
             return tuple()
-
 
         def validate(self, value: Any, parents: list[str]) -> tuple:
             """Validate a value according to this objects typing."""
@@ -238,7 +256,8 @@ expected {ptype('list')}"
                 )
 
             if len(self.item_types) != len(value):
-                amount = "Too many" if len(value) > len(self.item_types) else "Too few"
+                amount = "Too many" if len(value) > len(
+                    self.item_types) else "Too few"
                 plural = ("were", "s") if len(value) > 1 else ("was", "")
                 raise TypeError(
                     f"{ppath(*parents, spr='.')}; {amount} items in value, \
@@ -259,7 +278,7 @@ index {i}, expected {ptype(_type)}"
             return tuple(value)
 
         def __repr__(self) -> str:
-            return  str(self)
+            return str(self)
 
         def __str__(self) -> str:
             return f"tuple[{', '.join(str(it) for it in self.item_types)}]"
@@ -269,7 +288,7 @@ index {i}, expected {ptype(_type)}"
 
         def __init__(
             self,
-            item_types: set(type|GenericAlias|UnionType),
+            item_types: set(type | GenericAlias | UnionType),
             parents: list[str]
         ) -> None:
             self.name = "list"
@@ -309,7 +328,7 @@ expected {ptype('list')}"
 
         def __init__(
             self,
-            item_types: set(type|GenericAlias|UnionType),
+            item_types: set(type | GenericAlias | UnionType),
             parents: list[str]
         ) -> None:
             self.name = "set"
@@ -323,8 +342,8 @@ expected {ptype('list')}"
             """Validate a value according to this objects typing."""
             if not isinstance(value, list):
                 raise TypeError(
-                    f"{ppath(*parents, spr='.')}; invalid value type {ptype(type(value).__name__)} \
-expected {ptype('list')}"
+                    f"{ppath(*parents, spr='.')}; invalid value type \
+{ptype(type(value).__name__)} expected {ptype('list')}"
                 )
 
             value = list(value)
@@ -334,7 +353,8 @@ expected {ptype('list')}"
                 except TypeError as exc:
                     raise TypeError(
                         f"{ppath(*parents, spr='.')}; invalid item type \
-{ptype(type(item).__name__)} at index {ptype(i, False)}, expected {ptype(str(self.item_type))}"
+{ptype(type(item).__name__)} at index {ptype(i, False)}, expected \
+{ptype(str(self.item_type))}"
                     ) from exc
 
             return set(value)
@@ -345,11 +365,13 @@ expected {ptype('list')}"
         def __str__(self) -> str:
             return f"set[{self.item_type}]"
 
+
 class CFGUnionType:
     """Union type that can validate a value."""
 
     def __init__(self, _type: UnionType, parents: list[str]) -> None:
-        self.types = [new_type(it, [*parents, "union"]) for it in list(_type.__args__)]
+        self.types = [new_type(it, [*parents, "union"])
+                      for it in list(_type.__args__)]
         self.parents = parents
 
     def default(self) -> Any:
@@ -375,13 +397,15 @@ expected one of {', '.join(ptype(str(v)) for v in self.types)}"
     def __str__(self) -> str:
         return " | ".join(str(it) for it in self.types)
 
+
 class CFGType:
     """Type that can be validated."""
+
     def __init__(self, _type: type, parents: list[str]) -> None:
         if (
             not isinstance(_type, Options)
             and (cfg not in _type.__bases__
-            and _type not in valid_type)
+                 and _type not in valid_type)
         ):
             raise TypeError(f"{ppath(*parents, spr='.')}; invalid type {ptype(_type.__name__)}, \
 expected one of: \
@@ -400,7 +424,7 @@ expected one of: \
             validate_reserved(value, self.type, parents)
         elif not isinstance(value, self.type):
             raise TypeError(
-                    f"{ppath(*parents, spr='.')}; invalid type {ptype(type(value).__name__)}, \
+                f"{ppath(*parents, spr='.')}; invalid type {ptype(type(value).__name__)}, \
 expected {ptype(self.type.__name__)}"
             )
 
@@ -412,7 +436,8 @@ expected {ptype(self.type.__name__)}"
     def __str__(self) -> str:
         return get_type(self.type).__name__
 
-#? CONFIG LOGIC
+# ? CONFIG LOGIC
+
 
 class cfg:
     """Base typed config class."""
@@ -468,7 +493,8 @@ must have load_{extension} defined to load '.{extension}' files")
                     if not ismethod(getattr(self, f"load_{extension}")):
                         raise TypeError(f"load_{extension} must be a method")
 
-                    data = getattr(self, f"load_{extension}")(cfg_file.read()) or {}
+                    data = getattr(self, f"load_{extension}")(
+                        cfg_file.read()) or {}
         else:
             data = data or {}
 
@@ -487,15 +513,18 @@ must have load_{extension} defined to load '.{extension}' files")
                 and not ismethod(i[1])
                 and i[0] not in ["tcfg_attributes", "tcfg_setup"]
             ):
-                __tcfg_values__[i[0]] = {"type": MISSING, "default": setup_default(i[1])}
+                __tcfg_values__[i[0]] = {
+                    "type": MISSING, "default": setup_default(i[1])}
 
         # Get annotations for class attributes
         for anno, _type in get_type_hints(type(self)).items():
             if not anno.startswith("_"):
                 if anno not in __tcfg_values__:
-                    __tcfg_values__[anno] = {"type": MISSING, "default": MISSING}
+                    __tcfg_values__[anno] = {
+                        "type": MISSING, "default": MISSING}
 
-                __tcfg_values__[anno]["type"] = parse_type(_type, [*parents, anno])
+                __tcfg_values__[anno]["type"] = parse_type(
+                    _type, [*parents, anno])
 
         # Create annotations and default values for class attributes
         # They are only created if they are MISSING
@@ -511,7 +540,8 @@ must have load_{extension} defined to load '.{extension}' files")
                 setattr(self, attr, __tcfg_values__[attr]["default"])
             else:
                 if data["type"] == MISSING:
-                    data["type"] = parse_type(get_type(data["default"]), [*parents, attr])
+                    data["type"] = parse_type(
+                        get_type(data["default"]), [*parents, attr])
 
                 if data["default"] == MISSING:
                     if (
@@ -535,17 +565,20 @@ must have load_{extension} defined to load '.{extension}' files")
         """Validate the values from the configuration dict and set the values accordingly."""
 
         if not isinstance(data, dict):
-            raise TypeError(f"Can not validate configuration of type {type(data)}")
+            raise TypeError(
+                f"Can not validate configuration of type {type(data)}")
 
         for key, value in data.items():
             if key not in self.__tcfg_values__ and self.__tcfg_strict__:
-                raise KeyError(f"{ppath(*parents, spr='.')}; invalid configuration key {key!r}")
+                raise KeyError(
+                    f"{ppath(*parents, spr='.')}; invalid configuration key {key!r}")
 
             if not (
                 isinstance(self.__tcfg_values__[key]["type"], CFGType)
                 and cfg in self.__tcfg_values__[key]["type"].type.__bases__
             ):
-                value = self.__tcfg_values__[key]["type"].validate(value, [*parents, key])
+                value = self.__tcfg_values__[
+                    key]["type"].validate(value, [*parents, key])
                 setattr(self, key, value)
 
         for key, value in self.__tcfg_values__.items():
@@ -558,14 +591,15 @@ must have load_{extension} defined to load '.{extension}' files")
                 setattr(
                     self,
                     key,
-                    self.__tcfg_values__[key]["type"].type(data_value, [*parents, key])
+                    self.__tcfg_values__[key]["type"].type(
+                        data_value, [*parents, key])
                 )
 
     def __iter__(self) -> Iterator[str, Any]:
         for key, value in self.__tcfg_values__.items():
             value = getattr(self, key)
             if isinstance(value, cfg):
-                yield from getattr(self, key)
+                yield key, dict(value)
             else:
                 yield key, value
 
@@ -588,7 +622,7 @@ must have load_{extension} defined to load '.{extension}' files")
             if isinstance(cfg_value, cfg):
                 try:
                     cfg_value.save(defaults)
-                except:
+                except Exception:
                     result = cfg_value.__tcfg_build_save_dict__(defaults)
                     if len(result) > 0:
                         results[key] = result

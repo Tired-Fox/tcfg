@@ -1,14 +1,15 @@
-from .cfg import cfg
+from pyparsing import Any
+from .config import cfg
 from .reserved import *
 
 def tcfg(
     cls=None,
     *,
-    path: str = None,
-) -> cfg:
+    path: str|None = None,
+):
     """Decorator to convert a class to a configuration class object."""
 
-    def wrapper(wrap=object) -> cfg:
+    def wrapper(wrap=object):
         if path is not None:
             class Config(cfg, wrap):
                 """Config class from the config base class and the wrapped class."""
