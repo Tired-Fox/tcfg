@@ -2,7 +2,7 @@ from .config import cfg
 from .reserved import *
 from typing import Literal
 
-__version__ = "0.4.1"
+__version__ = "0.4.3"
 
 def tcfg(
     cls=None,
