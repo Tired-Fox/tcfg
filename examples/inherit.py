@@ -1,4 +1,4 @@
-from tcfg import Path, config
+from tcfg import TypePath, config
 from typing import Literal
 
 
@@ -27,7 +27,7 @@ class Config(config):
 
     path: Literal['/home/', '/home/documents']
 
-    random: str = Path('/random/dir')
+    random: str = TypePath('/random/dir')
 
 
 if __name__ == "__main__":

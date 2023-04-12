@@ -1,4 +1,4 @@
-from tcfg import Path, tcfg
+from tcfg import TypePath, tcfg
 from typing import Literal
 
 
@@ -35,7 +35,7 @@ class Config:
     path: Literal['/home/', '/home/documents']
     """Path to root of server. ONLY two paths supported."""
 
-    random: str = Path('/random/dir')
+    random: str = TypePath('/random/dir')
     """Random path. Is normalized and has `/` stripped from ends. Stored as a
     string."""
 

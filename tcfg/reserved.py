@@ -3,7 +3,7 @@ from __future__ import annotations
 
 __all__ = [
     "MISSING",
-    "Path",
+    "TypePath",
 ]
 
 
@@ -16,11 +16,11 @@ class Missing:
 MISSING = Missing()
 
 
-class Path:
+class TypePath(str):
     """Allows for eazy path generation."""
 
     def __init__(self, *paths: str, strip: bool = True) -> None:
-        self.path = Path.normalize(
+        self.path = TypePath.normalize(
             *paths, strip=strip) if len(paths) > 0 else ""
 
     @staticmethod
@@ -47,9 +47,9 @@ class Path:
             ]
         )
 
-    def __truediv__(self, scalar: Path):
-        if isinstance(scalar, Path):
-            return Path(self.path.rstrip("/") + "/" + scalar.path.lstrip("/"))
+    def __truediv__(self, scalar: TypePath):
+        if isinstance(scalar, TypePath):
+            return TypePath(self.path.rstrip("/") + "/" + scalar.path.lstrip("/"))
         raise TypeError("Can't divide with values other that 'Path'")
 
     def __repr__(self) -> str:

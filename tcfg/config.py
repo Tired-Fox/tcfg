@@ -28,18 +28,18 @@ import pathlib
 import re
 
 from types import GenericAlias, UnionType
-from typing import get_type_hints, Any, Literal
+from typing import TypeAlias, get_type_hints, Any, Literal
 
 from json import loads as json_load, dumps as json_dump
 from pyparsing import Iterator
 from toml import loads as toml_load, dumps as toml_dump
 from yaml import safe_load as yml_load, dump as yml_dump
 
-from .reserved import Path, MISSING
+from .reserved import TypePath, MISSING
 
 from saimll import ppath, SAIML, p_value
 
-LiteralGenericAlias = type(Literal[''])
+LiteralGenericAlias: TypeAlias = type(Literal[''])
 
 
 def ptype(_type: str, quotes: bool = True) -> str:
@@ -53,7 +53,7 @@ def ptype(_type: str, quotes: bool = True) -> str:
 def new_type(
     _type: UnionType | type | GenericAlias | LiteralGenericAlias,
     parents: list[str]
-) -> CFGGenericAlias | CFGUnionType | CFGType:
+) -> CFGGenericAlias | CFGUnionType | CFGType | CFGLiteral:
     """Generate a config validation type from a new_type."""
 
     if isinstance(_type, UnionType):
@@ -103,33 +103,33 @@ def parse_valid_value(
     """Parse the config value, if it is one of the special config types then
     return the transformed value.
     """
-    if isinstance(_type, CFGType) and _type.type == Path or _type == Path:
-        return Path.normalize(value)
+    if isinstance(_type, CFGType) and _type.type == TypePath or _type == TypePath:
+        return TypePath.normalize(value)
     return value
 
 
 def is_reserved(_type):
-    return _type in [Path]
+    return _type in [TypePath]
 
 
 def validate_reserved(value, _type, parents):
-    if _type == Path:
+    if _type == TypePath:
         if not isinstance(value, str):
             raise TypeError(
                 f"{ppath(*parents, spr='.')}; invalid type \
 {ptype(type(value).__name__)}, expected {ptype('str')}"
             )
-        return Path.normalize(value)
+        return TypePath.normalize(value)
 
 
-valid_type = (int, float, bool, str, list, dict, Path)
+valid_type = (int, float, bool, str, list, dict, TypePath)
 
 
 class CFGGenericAlias:
     """Base type that can validate a value."""
 
     @staticmethod
-    def new(_type: GenericAlias, parents: list[str]) -> GenericAlias:
+    def new(_type: GenericAlias, parents: list[str]) -> CFGGenericAlias:
         """Create a specific generic alias config validation type from a
         GenericAlias type hint.
         """
@@ -396,7 +396,7 @@ class CFGLiteral:
     type.
     """
 
-    def __init__(self, literal: Literal, parents: list[str]):
+    def __init__(self, literal: LiteralGenericAlias, parents: list[str]):
         self.literals = literal.__args__
 
     def default(self) -> Any:
@@ -411,7 +411,7 @@ class CFGLiteral:
 
         for option in self.literals:
             if is_reserved(get_type(option)):
-                return validate_reserved(value, Path, parents)
+                return validate_reserved(value, TypePath, parents)
             if value == option:
                 return value
 
@@ -572,8 +572,8 @@ class cfg:
                 ):
                     data["default"] = data["type"].default()
 
-            if isinstance(data["default"], Path):
-                data["type"] = parse_type(Path, [*parents, attr])
+            if isinstance(data["default"], TypePath):
+                data["type"] = parse_type(TypePath, [*parents, attr])
                 data["default"] = str(data["default"])
 
             setattr(self, attr, data["default"])
@@ -584,7 +584,7 @@ class cfg:
         """Parse and normalize tcfg class attributes for a given object."""
 
         # Normalize the seperators in the _path_ and strip `/` from the ends
-        _path_ = Path.normalize(getattr(self, "_path_") or "")
+        _path_ = TypePath.normalize(getattr(self, "_path_") or "")
         setattr(self, "_path_", _path_ if _path_ != "" else MISSING)
 
     def __validate__(self, data: dict, parents: list[str] = None):
