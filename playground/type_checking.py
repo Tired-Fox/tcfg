@@ -1,29 +1,62 @@
+from functools import wraps
 from os import walk
 from types import GenericAlias
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from playground.exceptions import ConfigTypeError
 from tcfg import type_check, Option
 from tcfg.type_check import MISSING
-T = TypeVar("T")
 
-def cfg_type(func: Callable):
-    class GT(int):
-        default = 
+def cfg_type(
+    func: Callable|None=None,
+    *,
+    default: Any = MISSING,
+):
+    """Decorator to convert a class to a configuration class object."""
 
-@cfg_type
-def GreaterThan():
-    return 
+    def wrapper(wrap: Callable):
+        if default != MISSING:
+            class CustomTypeDefault:
+                default = 0
 
-class GreaterThan(int):
-    default = 0
+                def __init__(self, item: Any):
+                    self._item_ = item
 
-    def _error_(self, message):
-        raise ConfigTypeError()
+                def _value_(self) -> Any:
+                    return self._item_
+                
+                def __class_getitem__(cls, __item):
+                    if not isinstance(__item, tuple):
+                        __item = tuple(__item,)
+                    return GenericAlias(cls, *__item)
+            return CustomTypeDefault
+        else:
+            class CustomType:
+                default = None
 
-    def __class_getitem__(cls, __item):
-        if not isinstance(__item, tuple):
-            __item = tuple(__item,)
-        return GenericAlias(cls, *__item)
+                def __init__(self, item: Any):
+                    self._item_ = item
+
+                def _value_(self) -> Any:
+                    return self._item_
+
+                def __class_getitem__(cls, __item):
+                    if not isinstance(__item, tuple):
+                        __item = tuple(__item,)
+                    return GenericAlias(cls, *__item)
+            return CustomType
+
+    if func is None:
+        return wrapper
+
+    return wrapper(func)
+
+@cfg_type(default=0)
+def GreaterThan(value: int, min: int = 0) -> int:
+    if value <= min:
+        raise TypeError(f"Expected value to be greater than {min}; was {value}")
+    return value
+
+
 
 if __name__ == "__main__":
     # Da' Rules
