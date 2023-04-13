@@ -1,5 +1,14 @@
 from .config import cfg
 from .reserved import *
+from .type_check import type_check, PathType, ConfigTypeError, Option
+
+__all__ = [
+    "type_check",
+    "tcfg",
+    "cfg",
+    "PathType",
+    "ConfigTypeError"
+]
 
 __version__ = "0.4.4"
 
