@@ -15,6 +15,11 @@ Type = type | Alias | UnionAlias
 class Missing():
     def __bool__(self):
         return False
+    def __str__(self):
+        return "MISSING"
+    def __repr__(self):
+        return "MISSING"
+
 MISSING = Missing()
 
 Option = Literal

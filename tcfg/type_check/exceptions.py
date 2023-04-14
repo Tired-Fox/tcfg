@@ -62,9 +62,11 @@ class ConfigTypeError(Exception):
     def __init__(self, parents: list, message: str):
         self.parents = parents
         self.message = message
+        self.type = _type_error_(list(self.parents))
+        self.full = f"\x1b[1m{self.type}\x1b[22m\n    {self.message}" 
 
     def __str__(self):
-        return f"\x1b[1m{_type_error_(self.parents)}\x1b[22m\n  {self.message}"
+        return self.full
 
 class CustomTypeError(Exception):
     __module__ = Exception.__module__

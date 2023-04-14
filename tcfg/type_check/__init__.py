@@ -7,6 +7,7 @@ from .base import (
     SpecialGenericAlias,
     UnionAlias,
     MISSING,
+    Missing,
     type_str,
     get_type,
     Option,
@@ -82,13 +83,12 @@ def _type_check_list_(_type: Alias, _value: Any, __parents__: list | None) -> An
         idx = 0
         try:
             for value in _value:
-                type_check(_type.__args__[0], value, [*__parents__, (_type, 0)])
+                _value[idx] = type_check(_type.__args__[0], value, [*__parents__, (_type, 0)])
                 idx += 1
         except ConfigTypeError as cte:
             raise ConfigTypeError(
-                [*__parents__, (_type, 0)],
-                f"Expected type {type_str(_type.__args__[0])!r} at index {idx}"
-                + f"; was {type_str(type(_value[idx]))!r}",
+                cte.parents,
+                f"list[{idx}]: {cte.message}",
             ) from cte
     return _value
 
@@ -104,6 +104,7 @@ def _type_check_tuple_(_type: Alias, _value: Any, __parents__: list | None) -> A
             f"Expected the value to be a list or tuple not a {type_str(get_type(_value))!r}",
         )
 
+    _value = list(_value)
     if len(_type.__args__) > 0:
         if len(_type.__args__) != len(_value):
             raise ConfigTypeError(
@@ -114,13 +115,12 @@ def _type_check_tuple_(_type: Alias, _value: Any, __parents__: list | None) -> A
         idx = 0
         try:
             for value in _value:
-                type_check(_type.__args__[0], value, [*__parents__, (_type, idx)])
+                _value[idx] = type_check(_type.__args__[0], value, [*__parents__, (_type, idx)])
                 idx += 1
         except ConfigTypeError as cte:
             raise ConfigTypeError(
-                [*__parents__, (_type, idx)],
-                f"Expected type {type_str(_type.__args__[idx])!r} at index {idx}"
-                + f"; was {type_str(type(_value[idx]))!r}",
+                cte.parents,
+                f"tuple[{idx}]: {cte.message}"
             ) from cte
     return tuple(_value)
 
@@ -136,17 +136,17 @@ def _type_check_set_(_type: Alias, _value: Any, __parents__: list | None) -> Any
             f"Expected the value to be a list, tuple, or set not a {type_str(get_type(_value))!r}",
         )
 
+    _value = list(_value)
     if len(_type.__args__) > 0:
         idx = 0
         try:
             for value in _value:
-                type_check(_type.__args__[0], value, [*__parents__, (_type, 0)])
+                _value[idx] = type_check(_type.__args__[0], value, [*__parents__, (_type, 0)])
                 idx += 1
         except ConfigTypeError as cte:
             raise ConfigTypeError(
-                [*__parents__, (_type, 0)],
-                f"Expected type {type_str(_type.__args__[0])!r} at index {idx}"
-                + f"; was {type_str(type(_value[idx]))!r}",
+                cte.parents,
+                f"set[{idx}]: {cte.message}"
             ) from cte
     return set(_value)
 
@@ -171,8 +171,8 @@ def _type_check_dict_(_type: Alias, _value: Any, __parents__: list | None) -> An
             )
 
         for key, value in _value.items():
-            type_check(_type.__args__[0], key, [*__parents__, (_type, 0)])
-            type_check(_type.__args__[1], value, [*__parents__, (_type, 1)])
+            key = type_check(_type.__args__[0], key, [*__parents__, (_type, 0)])
+            _value[key] = type_check(_type.__args__[1], value, [*__parents__, (_type, 1)])
 
     return _value
 

@@ -1,0 +1,11 @@
+ignore: 
+  - "**/*.py"
+root: 'Base'
+server:
+  host: localhost
+  open: false
+  port: 3000
+  watch:
+  - ./type_checking.py
+  - ./config.py
+  - ./sample.yml

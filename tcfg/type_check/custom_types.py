@@ -1,7 +1,7 @@
 from inspect import getfullargspec
 from pathlib import Path
 from types import GenericAlias
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, TypeVar, runtime_checkable
 from .base import MISSING, type_str, get_type
 from .exceptions import CustomTypeError, ConfigTypeError
 
@@ -9,29 +9,42 @@ __all__ = [
     # To create new types
     "custom_type",
     "ARG",
-
     # For getting init value and validating
     "ct_value",
     "ct_validate",
-
     # pre built custom types
     "Range",
     "GreaterThan",
     "LessThan",
-    "PathType"
+    "PathType",
+    "new",
 ]
+
 
 @runtime_checkable
 class CFGCustomType(Protocol):
+    __module__ = 'builtins'
     _default_ = None
     __args__ = ()
     _validator_args_ = []
     _validator_arg_types_ = {}
-    _return_anno_ = None 
-    def __init__(self, item: Any): ...
+    _return_anno_ = None
+    _vararg_ = False
+
+    def __init__(self, item: Any):
+        ...
+
     @staticmethod
-    def _validator_(value, *args) -> Any: ...
-    def __class_getitem__(cls, __item): ...
+    def _validator_(value, *args) -> Any:
+        ...
+
+    def __class_getitem__(cls, __item):
+        ...
+
+
+def new(value: Any) -> Any:
+    return value
+
 
 def custom_type(
     default: Any = MISSING,
@@ -39,59 +52,39 @@ def custom_type(
     """Decorator to convert a class to a configuration class object."""
 
     def wrapper(wrap: Callable):
-        args, _, _, _, _, _, annotations = getfullargspec(wrap)
+        args, varargs, _, _, _, _, annotations = getfullargspec(wrap)
+
+        vararg = None
+        if varargs is not None:
+            vararg = (varargs, annotations.pop(varargs, MISSING))
 
         args.remove("value")
         annotations.pop("value")
 
-        if default != MISSING:
+        class CustomType(Any):
+            __module__ = 'builtins'
+            _default_ = default
+            __args__ = ()
+            _validator_args_ = args
+            _validator_arg_types_ = {key: annotations[key] for key in args}
+            _return_anno_ = annotations.pop("return", None)
+            _vararg_ = vararg
 
-            class CustomTypeDefault:
-                _default_ = default
-                __args__ = ()
-                _validator_args_ = args
-                _validator_arg_types_ = {key: annotations[key] for key in args}
-                _return_anno_ = annotations.pop("return", None)
+            def __init__(self, item: Any):
+                self._value_ = item
 
-                def __init__(self, item: Any):
-                    self._value_ = item
+            @staticmethod
+            def _validator_(value, *args) -> Any:
+                return wrap(value, *args)
 
-                @staticmethod
-                def _validator_(value, *args) -> Any:
-                    return wrap(value, *args)
+            def __class_getitem__(cls, __item):
+                if not isinstance(__item, tuple):
+                    __item = (__item,)
+                return GenericAlias(cls, __item)
 
-                def __class_getitem__(cls, __item):
-                    if not isinstance(__item, tuple):
-                        __item = (__item,)
-                    return GenericAlias(cls, __item)
-
-            CustomTypeDefault.__name__ = wrap.__name__
-            CustomTypeDefault.__qualname__ = wrap.__qualname__
-            return CustomTypeDefault
-        else:
-
-            class CustomType:
-                _default_ = MISSING
-                __args__ = ()
-                _validator_args_ = args
-                _validator_arg_types_ = {key: annotations[key] for key in args}
-                _return_anno_ = annotations.pop("return", None)
-
-                def __init__(self, item: Any):
-                    self._value_ = item
-
-                @staticmethod
-                def _validator_(value, *args) -> Any:
-                    return wrap(value, *args)
-
-                def __class_getitem__(cls, __item):
-                    if not isinstance(__item, tuple):
-                        __item = (__item,)
-                    return GenericAlias(cls, __item)
-
-            CustomType.__name__ = wrap.__name__
-            CustomType.__qualname__ = wrap.__qualname__
-            return CustomType
+        CustomType.__name__ = wrap.__name__
+        CustomType.__qualname__ = wrap.__qualname__
+        return CustomType
 
     return wrapper
 
@@ -138,13 +131,23 @@ def ct_validate(ct, value: Any, __parents__: list | None = None) -> Any:
         raise ValueError("Can only validate types for custom types")
 
     # Validate args
-    for idx, (arg, targ) in enumerate(zip(ct.__args__, ct._validator_args_)):
+    idx = -1
+    for arg, targ in zip(ct.__args__, ct._validator_args_):
+        idx += 1
         if targ in ct._validator_arg_types_ and not isinstance(arg, ct._validator_arg_types_[targ]):
             raise ConfigTypeError(
                 [*__parents__, (ct, idx)],
                 f"The type for arg {targ!r} is {type_str(ct._validator_arg_types_[targ])!r},"
                 + f" but a value of type {get_type(arg).__name__!r} was found",
             )
+
+    if idx < len(ct._validator_args_) and ct._vararg_ is not None and ct._vararg_[1] != MISSING:
+        for i, arg in enumerate(ct.__args__[idx + 1 :]):
+            if not isinstance(arg, ct._vararg_[1]):
+                raise ConfigTypeError(
+                    [*__parents__, (ct, i + idx + 1)],
+                    f"The type for the varargs, *{ct._vararg_[0]} is {get_type(ct._vararg_[1]).__name__!r}; found mismatched type {get_type(arg).__name__!r}.",
+                )
 
     # Build default if MISSING
     if value == MISSING:
@@ -158,32 +161,33 @@ def ct_validate(ct, value: Any, __parents__: list | None = None) -> Any:
             return None
 
     # Call validator method and return it's value or reraise a caught execption
+    stop = len(ct._validator_args_) if ct._vararg_ is None else len(ct.__args__)
     try:
-        return ct._validator_(value, *ct.__args__[: len(ct._validator_args_)])
+        return ct._validator_(value, *ct.__args__[:stop])
     except TypeError as te:
         raise ConfigTypeError([*__parents__, (ct, None)], str(te))
     except CustomTypeError as cte:
         idx = None
         if cte.arg is not None:
             idx = ct._validator_args_.index(cte.arg)
-        raise ConfigTypeError(
-            [*__parents__, (ct, idx)],
-            cte.message
-        )
+        raise ConfigTypeError([*__parents__, (ct, idx)], cte.message)
+
 
 @custom_type(default=".")
-def PathType(value: str, exists: bool = False) -> str:
+def PathType(value: str, exists: bool = False, *args: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"Expected value to be 'str'; was {get_type(value).__name__!r}")
 
     value = value.replace("\\", "/").replace("//", "/").lstrip("./")
     if exists and not Path(value).exists():
         raise CustomTypeError(
-            f"File not found at location \x1b[32m{value!r}\x1b[39m. " + "Either create the path or change the path value",
+            f"File not found at location \x1b[32m{value!r}\x1b[39m. "
+            + "Either create the path or change the path value",
             arg="exists",
         )
 
     return value
+
 
 @custom_type(default=ARG(0))
 def GreaterThan(value: int, min: int = 0):
