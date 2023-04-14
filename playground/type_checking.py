@@ -1,62 +1,4 @@
-from functools import wraps
-from os import walk
-from types import GenericAlias
-from typing import Any, Callable, Optional
-from playground.exceptions import ConfigTypeError
-from tcfg import type_check, Option
-from tcfg.type_check import MISSING
-
-def cfg_type(
-    func: Callable|None=None,
-    *,
-    default: Any = MISSING,
-):
-    """Decorator to convert a class to a configuration class object."""
-
-    def wrapper(wrap: Callable):
-        if default != MISSING:
-            class CustomTypeDefault:
-                default = 0
-
-                def __init__(self, item: Any):
-                    self._item_ = item
-
-                def _value_(self) -> Any:
-                    return self._item_
-                
-                def __class_getitem__(cls, __item):
-                    if not isinstance(__item, tuple):
-                        __item = tuple(__item,)
-                    return GenericAlias(cls, *__item)
-            return CustomTypeDefault
-        else:
-            class CustomType:
-                default = None
-
-                def __init__(self, item: Any):
-                    self._item_ = item
-
-                def _value_(self) -> Any:
-                    return self._item_
-
-                def __class_getitem__(cls, __item):
-                    if not isinstance(__item, tuple):
-                        __item = tuple(__item,)
-                    return GenericAlias(cls, *__item)
-            return CustomType
-
-    if func is None:
-        return wrapper
-
-    return wrapper(func)
-
-@cfg_type(default=0)
-def GreaterThan(value: int, min: int = 0) -> int:
-    if value <= min:
-        raise TypeError(f"Expected value to be greater than {min}; was {value}")
-    return value
-
-
+from tcfg.type_check import type_check, GreaterThan, LessThan, Range, MISSING, PathType
 
 if __name__ == "__main__":
     # Da' Rules
@@ -80,5 +22,8 @@ if __name__ == "__main__":
     # print(type_check(Optional[int], None))
     # print(type_check(int | None, "Invalid"))
     # print(type_check(Any, "Invalid"))
-    data: ClassType[3, int] = ClassType([])
-
+    # print(ct_value(GreaterThan(3)))
+    # print(ct_validate(GreaterThan[1], MISSING))
+    # print(ct_validate(LessThan[10], 9))
+    # print(ct_validate(Range[0, 10], 5))
+    print(type_check(PathType[True], "./type_checking.py"))

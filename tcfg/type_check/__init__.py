@@ -4,7 +4,6 @@ from typing import Any, Optional
 
 from .base import (
     Alias,
-    PathType,
     SpecialGenericAlias,
     UnionAlias,
     MISSING,
@@ -14,16 +13,34 @@ from .base import (
     LiteralGenericAlias,
     AnyAlias,
 )
-from .exceptions import ConfigTypeError
+from .custom_types import CFGCustomType
+from .exceptions import ConfigTypeError, CustomTypeError
+from .custom_types import *
 
 __all__ = [
+    # To type check a value
+    "type_check",
+    # Types
     "PathType",
     "MISSING",
     "Option",
     "Optional",
     "Any",
-    "type_check"
+    # Exceptions
+    "ConfigTypeError",
+    "CustomTypeError",
+    # To create new types
+    "custom_type",
+    "ARG",
+    # For getting init value and validating
+    "ct_value",
+    "ct_validate",
+    # pre built custom types
+    "Range",
+    "GreaterThan",
+    "LessThan",
 ]
+
 
 def _type_check_union(_type: UnionAlias, _value: Any, __parents__: list | None = None) -> Any:
     __parents__ = __parents__ or []
@@ -34,7 +51,7 @@ def _type_check_union(_type: UnionAlias, _value: Any, __parents__: list | None =
         if not isinstance(_value, (_type.__args__[0], NoneType)):
             raise ConfigTypeError(
                 [*__parents__, (_type, 0)],
-                f"Expected either {type_str(_type.__args__[0])!r} or None; was {get_type(_value).__name__!r}"
+                f"Expected either {type_str(_type.__args__[0])!r} or None; was {get_type(_value).__name__!r}",
             )
 
         return _value
@@ -45,10 +62,11 @@ def _type_check_union(_type: UnionAlias, _value: Any, __parents__: list | None =
         if not isinstance(_value, _type.__args__):
             raise ConfigTypeError(
                 [*__parents__, (_type, None)],
-                f"Expected on of {', '.join(repr(type_str(arg)) for arg in _type.__args__)}; was {get_type(_value).__name__!r}"
+                f"Expected on of {', '.join(repr(type_str(arg)) for arg in _type.__args__)}; was {get_type(_value).__name__!r}",
             )
 
         return _value
+
 
 def _type_check_list_(_type: Alias, _value: Any, __parents__: list | None) -> Any:
     __parents__ = __parents__ or []
@@ -188,18 +206,6 @@ def _type_check_generic(_type: Alias, _value: Any, __parents__: list | None = No
         return _type_check_dict_(_type, _value, __parents__)
     if name in ["Literal"]:
         return _type_check_literal_(_type, _value, __parents__)
-    if name in ["PathType"]:
-        (exists,) = _type.__args__
-        _value = PathType.create(_value)
-
-        if exists and not Path(_value).exists():
-            raise ConfigTypeError(
-                [*__parents__, (_type, 0)],
-                f" File does not exist at location \x1b[32m{_value!r}\x1b[39m."
-                + " Either create the path or change the path value",
-            )
-
-        return _value
     raise TypeError(f"Unkown GenericAlias: {_type}")
 
 
@@ -220,14 +226,15 @@ def type_check(
 
     __parents__ = __parents__ or []
 
-    # ?TODO: Custom validation type
+    if isinstance(_type, CFGCustomType):
+        return ct_validate(_type, _value, __parents__)
     if _type is None:
         if _value is not None:
             raise ConfigTypeError(
                 [*__parents__, (_type, None)], f"Expected value to be None; was {get_type(_value)}"
             )
         return None
-    elif isinstance(_type, AnyAlias):
+    if isinstance(_type, AnyAlias):
         if _value == MISSING:
             return None
         return _value
@@ -236,17 +243,18 @@ def type_check(
     if isinstance(_type, (GenericAlias, SpecialGenericAlias, LiteralGenericAlias)):
         return _type_check_generic(_type, _value, __parents__)
     if isinstance(_type, type):
+        if _value == MISSING:
+            try:
+                return _type()
+            except:
+                return None
+
         if not isinstance(_value, _type):
             raise ConfigTypeError(
                 [*__parents__, (_type, None)],
                 f"Expected {_type.__name__!r} but was {type(_value).__name__!r}",
             )
 
-        if _value == MISSING:
-            try:
-                return _type()
-            except:
-                return None
         return _value
 
     raise TypeError(f"Unkown type for type check: {_type}")
