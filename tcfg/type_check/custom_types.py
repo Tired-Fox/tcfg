@@ -49,10 +49,17 @@ def new(value: Any) -> Any:
 def custom_type(
     default: Any = MISSING,
 ):
-    """Decorator to convert a class to a configuration class object."""
+    """Decorator to convert a class to a configuration class object.
 
-    def wrapper(wrap: Callable):
-        args, varargs, _, _, _, _, annotations = getfullargspec(wrap)
+    Wrapped method must take in at least one argument that is the value to be validated.
+    The method is also expected to return the value if everything is valid. This is where
+    the custom type may modify the value before returning.
+
+    For example, the custom type, PathType, will normalize the slashes and make all `\\` into `/`.
+    """
+
+    def wrapper(wrap: Callable[[Any, ...], Any]):
+        args, varargs, _, defaults, _, _, annotations = getfullargspec(wrap)
 
         vararg = None
         if varargs is not None:
@@ -69,6 +76,7 @@ def custom_type(
             _validator_arg_types_ = {key: annotations[key] for key in args}
             _return_anno_ = annotations.pop("return", None)
             _vararg_ = vararg
+            _rargs_ = (len(args) - len(defaults or []))
 
             def __init__(self, item: Any):
                 self._value_ = item
@@ -130,6 +138,12 @@ def ct_validate(ct, value: Any, __parents__: list | None = None) -> Any:
     if not hasattr(ct, "_validator_args_"):
         raise ValueError("Can only validate types for custom types")
 
+    if len(ct.__args__) > len(ct._validator_args_):
+        raise ConfigTypeError(
+            [*__parents__, (ct, len(ct._validator_args_))],
+            f"To many type arguments for custom type {ct.__name__!r}. Expected {len(ct._validator_args_)} arg(s) not {len(ct.__args__)}"
+        )
+
     # Validate args
     idx = -1
     for arg, targ in zip(ct.__args__, ct._validator_args_):
@@ -174,7 +188,7 @@ def ct_validate(ct, value: Any, __parents__: list | None = None) -> Any:
 
 
 @custom_type(default=".")
-def PathType(value: str, exists: bool = False, *args: str) -> str:
+def PathType(value: str, exists: bool = False) -> str:
     if not isinstance(value, str):
         raise TypeError(f"Expected value to be 'str'; was {get_type(value).__name__!r}")
 
@@ -212,7 +226,7 @@ def LessThan(value: int, max: int = 0):
 
 
 @custom_type(default=ARG(0))
-def Range(value: int, min: int = 0, max: int = 0):
+def Range(value: int, min: int = 0, max: int = 0) -> int:
     if not isinstance(value, int):
         raise TypeError("Expected value to be an int")
 

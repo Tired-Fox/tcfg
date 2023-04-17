@@ -28,10 +28,9 @@ import pathlib
 import re
 
 from types import GenericAlias, UnionType
-from typing import TypeAlias, get_type_hints, Any, Literal
+from typing import TypeAlias, get_type_hints, Any, Literal, Iterator
 
 from json import loads as json_load, dumps as json_dump
-from pyparsing import Iterator
 from toml import loads as toml_load, dumps as toml_dump
 from yaml import safe_load as yml_load, dump as yml_dump
 

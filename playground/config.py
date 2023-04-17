@@ -166,11 +166,16 @@ class cfg:
                 __tcfg_values__[i[0]] = {"type": MISSING, "default": setup_default(i[1])}
 
         # Get annotations for class attributes
-        for anno, _type in get_type_hints(type(self)).items():
+        for anno, _type in self.__annotations__.items():
             if not anno.startswith("_"):
                 if anno not in __tcfg_values__:
                     __tcfg_values__[anno] = {"type": MISSING, "default": MISSING}
-                __tcfg_values__[anno]["type"] = _type
+                __tcfg_values__[anno]["type"] = eval(_type )
+        # for anno, _type in get_type_hints(type(self)).items():
+        #     if not anno.startswith("_"):
+        #         if anno not in __tcfg_values__:
+        #             __tcfg_values__[anno] = {"type": MISSING, "default": MISSING}
+        #         __tcfg_values__[anno]["type"] = _type
 
         # Create annotations and default values for class attributes
         # They are only created if they are MISSING
@@ -239,7 +244,7 @@ class cfg:
                     result = type_check(self.__tcfg_values__[key]["type"], value)
                     setattr(self, key, result)
                 except ConfigTypeError as cte:
-                    path = ppath(*parents, clr='\x1b[37m', spr='.')
+                    path = ppath(*parents, clr='white', spr='.')
                     cte.message = f"\n\n\x1b[1m{path}.\x1b[31m{key}\x1b[22;39m: " + cte.message
                     raise cte
 
@@ -358,7 +363,7 @@ if __name__ == "__main__":
     class Server(cfg):
         port: int = 3031
         host: Option["localhost"] = "localhost"
-        watch: list[PathType[False, True]] = new(["."])
+        watch: list[PathType] = new(["."])
         open: bool = False
 
     class Config(cfg):
@@ -366,7 +371,7 @@ if __name__ == "__main__":
 
         server: Server
         ignore: list[str]
-        root: str = ""
+        root: str
 
     config = Config()
     url = f"http://{config.server.host}:{config.server.port}/{config.root}"
