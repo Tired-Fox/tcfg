@@ -1,10 +1,10 @@
 ignore: 
   - "**/*.py"
-root: 'Base'
+root: 'tcfg'
 server:
   host: localhost
   open: false
-  port: 3000
+  port: 8081
   watch:
   - ./type_checking.py
   - ./config.py

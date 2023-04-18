@@ -187,7 +187,7 @@ def ct_validate(ct, value: Any, __parents__: list | None = None) -> Any:
         raise ConfigTypeError([*__parents__, (ct, idx)], cte.message)
 
 
-@custom_type(default=".")
+@custom_type(default="")
 def PathType(value: str, exists: bool = False) -> str:
     if not isinstance(value, str):
         raise TypeError(f"Expected value to be 'str'; was {get_type(value).__name__!r}")
