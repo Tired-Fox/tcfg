@@ -12,7 +12,7 @@ AnyAlias: TypeAlias = _AnyMeta
 Alias = GenericAlias | SpecialGenericAlias | LiteralGenericAlias
 Type = type | Alias | UnionAlias
 
-class Missing():
+class Missing(str):
     def __bool__(self):
         return False
     def __str__(self):

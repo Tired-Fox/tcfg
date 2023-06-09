@@ -136,7 +136,6 @@ class cfg:
         strict: bool = True,
         skip_invalid: bool = False,
     ) -> None:
-
         prev_file = Path(traceback.extract_stack()[-2].filename)
         get_call_context(prev_file)
         self.__tcfg_call_globals__ = __call_cache__[prev_file.as_posix()]
@@ -292,18 +291,24 @@ class cfg:
                 result[key] = value
         return result
 
-    def __tcfg_build_save_dict__(self, defaults: bool) -> dict:
+    def __tcfg_build_save_dict__(self, override: bool = False, defaults: bool = False) -> dict:
         results = {}
 
         for key, value in self.__tcfg_values__.items():
             cfg_value = getattr(self, key)
             if isinstance(cfg_value, cfg):
-                try:
-                    # Try saving to specified file
-                    cfg_value.save(defaults)
-                except Exception:
+                if not override:
+                    try:
+                        # Try saving to specified file
+                        cfg_value.save(defaults=defaults)
+                    except Exception:
+                        # get save dict and append to current result
+                        result = cfg_value.__tcfg_build_save_dict__(override, defaults)
+                        if len(result) > 0:
+                            results[key] = result
+                else:
                     # get save dict and append to current result
-                    result = cfg_value.__tcfg_build_save_dict__(defaults)
+                    result = cfg_value.__tcfg_build_save_dict__(override, defaults)
                     if len(result) > 0:
                         results[key] = result
             else:
@@ -313,11 +318,11 @@ class cfg:
 
         return results
 
-    def save(self, defaults: bool = False):
+    def save(self, override: str = "", defaults: bool = False):
         """Save the current configuration data to the configuration files."""
 
-        save_data = self.__tcfg_build_save_dict__(defaults)
-        file_path = Path(self._path_)
+        save_data = self.__tcfg_build_save_dict__(override.strip() != "", defaults)
+        file_path = Path(str(self._path_) if override.strip() == "" else override)
 
         extension = file_path.suffix.lstrip(".")
         with file_path.open("+w", encoding="utf-8") as cfg_file:

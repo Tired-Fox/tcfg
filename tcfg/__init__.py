@@ -4,8 +4,10 @@ from .type_check import type_check, PathType, ConfigTypeError, Option, new
 __all__ = [
     "type_check",
     "cfg",
+    "ConfigTypeError",
     "PathType",
-    "ConfigTypeError"
+    "Option",
+    "new"
 ]
 
-__version__ = "0.4.5"
+__version__ = "0.4.6"
