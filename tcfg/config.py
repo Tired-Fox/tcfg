@@ -20,7 +20,6 @@ to the file.
 located
 """
 from __future__ import annotations
-from saimll import pprint
 
 import traceback
 import sys
@@ -28,7 +27,7 @@ from importlib import import_module
 from inspect import getmembers, ismethod
 
 from pathlib import Path
-from typing import Iterator, Any, get_type_hints, Type
+from typing import Iterator, Any
 
 # PARSERS
 from json import loads as json_load, dumps as json_dump
@@ -53,7 +52,7 @@ except:
 
 
 from saimll import ppath
-from .type_check import Missing, MISSING, type_check, ConfigTypeError, Option, PathType, new
+from tcfg.type_check import Missing, MISSING, type_check, ConfigTypeError
 
 
 class ConfigKeyError(Exception):
@@ -195,7 +194,10 @@ class cfg:
         # They are only created if they are MISSING
         for attr, data in __tcfg_values__.items():
             if data["default"] == MISSING:
-                data["default"] = type_check(data["type"], MISSING)
+                if cfg in data["type"].__bases__:
+                    data["default"] = None 
+                else:
+                    data["default"] = type_check(data["type"], MISSING)
             setattr(self, attr, data["default"])
         setattr(self, "__tcfg_values__", __tcfg_values__)
 
@@ -256,15 +258,15 @@ class cfg:
 
         for key, value in self.__tcfg_values__.items():
             if hasattr(value["type"], "__bases__") and cfg in value["type"].__bases__:
-                # Init an validate sub config class
-                if attr := getattr(self, key) is None or cfg not in attr.__bases__:
-                    setattr(
-                        self,
-                        key,
-                        value["type"](data.pop(key, {}), [*parents, key]),
-                    )
-                else:
-                    raise ValueError("Nested config classes should not be initialized. ONLY typed")
+                # Init and validate sub config class
+                if (attr := getattr(self, key)) is not None and (not isinstance(attr, type) or cfg not in attr.__class__.__bases__):
+                    print("Nested config classes should not be initialized. ONLY typed")
+                setattr(
+
+                    self,
+                    key,
+                    value["type"](data.pop(key, {}), [*parents, key]),
+                )
             elif getattr(self, key) == MISSING:
                 # Assign default value
                 try:

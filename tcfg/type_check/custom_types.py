@@ -43,6 +43,7 @@ class CFGCustomType(Protocol):
 
 
 def new(value: Any) -> Any:
+    """Wrapper around values to make them `Any` time to trick lsp."""
     return value
 
 
@@ -189,6 +190,9 @@ def ct_validate(ct, value: Any, __parents__: list | None = None) -> Any:
 
 @custom_type(default="")
 def PathType(value: str, exists: bool = False) -> str:
+    """A path string. This is a `/` seperated value. When the config parses this type it
+    expects a str type and it will automatically normalize the indentation. An optional value
+    can be passed to this type to specify whether the path must exist. Ex: `PathType[True]`"""
     if not isinstance(value, str):
         raise TypeError(f"Expected value to be 'str'; was {get_type(value).__name__!r}")
 
