@@ -195,7 +195,7 @@ class cfg:
         for attr, data in __tcfg_values__.items():
             if data["default"] == MISSING:
                 if cfg in data["type"].__bases__:
-                    data["default"] = None 
+                    data["default"] = None
                 else:
                     data["default"] = type_check(data["type"], MISSING)
             setattr(self, attr, data["default"])
@@ -236,7 +236,7 @@ class cfg:
         parents = parents or []
 
         if not isinstance(data, dict):
-            raise TypeError(f"Can not validate configuration of type {type(data).__name__!r}")
+            raise TypeError(f"{ppath(*parents, spr='.')}: Expected section to contain sub sections found {type(data).__name__!r}")
 
         for key, value in data.items():
             if key not in self.__tcfg_values__ and self.__tcfg_strict__:
@@ -259,10 +259,11 @@ class cfg:
         for key, value in self.__tcfg_values__.items():
             if hasattr(value["type"], "__bases__") and cfg in value["type"].__bases__:
                 # Init and validate sub config class
-                if (attr := getattr(self, key)) is not None and (not isinstance(attr, type) or cfg not in attr.__class__.__bases__):
+                if (attr := getattr(self, key)) is not None and (
+                    not isinstance(attr, type) or cfg not in attr.__class__.__bases__
+                ):
                     print("Nested config classes should not be initialized. ONLY typed")
                 setattr(
-
                     self,
                     key,
                     value["type"](data.pop(key, {}), [*parents, key]),
