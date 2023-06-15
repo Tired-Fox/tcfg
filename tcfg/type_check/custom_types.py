@@ -46,7 +46,6 @@ def new(value: Any) -> Any:
     """Wrapper around values to make them `Any` time to trick lsp."""
     return value
 
-
 def custom_type(
     default: Any = MISSING,
 ):
@@ -59,7 +58,7 @@ def custom_type(
     For example, the custom type, PathType, will normalize the slashes and make all `\\` into `/`.
     """
 
-    def wrapper(wrap: Callable[[Any, ...], Any]):
+    def wrapper(wrap: Callable[[Any, ...], Any]) -> Any:
         args, varargs, _, defaults, _, _, annotations = getfullargspec(wrap)
 
         vararg = None

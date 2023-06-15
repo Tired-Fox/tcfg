@@ -321,6 +321,9 @@ class cfg:
 
         return results
 
+    def __repr__(self) -> str:
+        return str(dict(self))
+
     def save(self, override: str = "", defaults: bool = False):
         """Save the current configuration data to the configuration files."""
 
