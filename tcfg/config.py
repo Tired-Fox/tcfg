@@ -25,6 +25,7 @@ import traceback
 import sys
 from importlib import import_module
 from inspect import getmembers, ismethod
+from copy import copy
 
 from pathlib import Path
 from typing import Iterator, Any
@@ -198,7 +199,7 @@ class cfg:
                     data["default"] = None
                 else:
                     data["default"] = type_check(data["type"], MISSING)
-            setattr(self, attr, data["default"])
+            setattr(self, attr, copy(data["default"]))
         setattr(self, "__tcfg_values__", __tcfg_values__)
 
     def __tcfg_attributes__(self):
@@ -317,7 +318,10 @@ class cfg:
             else:
                 # If not default value then add to results
                 if value["default"] != cfg_value or defaults:
-                    results[key] = cfg_value
+                    if isinstance(cfg_value, (tuple, set)):
+                        results[key] = list(cfg_value)
+                    else:
+                        results[key] = cfg_value
 
         return results
 
